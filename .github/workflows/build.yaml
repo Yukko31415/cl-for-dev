@@ -74,6 +74,7 @@ jobs:
         shell: bash
         run: |
           ocicl install
+          ocicl update
 
           # ocicl-runtime をロードする設定を書き込む
           cat > ~/.sbclrc << 'EOF'
@@ -103,5 +104,5 @@ jobs:
         with:
           name: cl-for-dev-${{ matrix.os }}
           path: |
-            cl-for-dev
-            cl-for-dev.exe
+            cl
+            cl.exe
