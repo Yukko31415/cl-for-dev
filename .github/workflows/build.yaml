@@ -1,0 +1,107 @@
+
+name: 'Build'
+
+on:
+  push:
+    branches: [ 'main', 'master' ]
+  pull_request:
+
+jobs:
+  build:
+    name: Build on ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      # ========================================
+      # 1. 各OSでSBCLをインストール
+      # ========================================
+      - name: Install SBCL (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y sbcl
+
+      - name: Install SBCL (macOS)
+        if: runner.os == 'macOS'
+        run: brew install sbcl
+
+      - name: Install SBCL (Windows)
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: choco install -y sbcl
+
+      # ========================================
+      # 2. ocicl のインストール
+      # ========================================
+      - name: Install ocicl (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          curl -fsSL https://ocicl.github.io/ocicl/deb-repo/ocicl-archive-keyring.gpg \
+            | sudo tee /usr/share/keyrings/ocicl-archive-keyring.asc > /dev/null
+          echo "deb [signed-by=/usr/share/keyrings/ocicl-archive-keyring.asc] https://ocicl.github.io/ocicl/deb-repo stable main" \
+            | sudo tee /etc/apt/sources.list.d/ocicl.list
+          sudo apt update
+          sudo apt install -y ocicl
+          ocicl setup
+
+      - name: Install ocicl (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew install ocicl
+          ocicl setup
+
+      - name: Install ocicl (Windows)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          git clone https://github.com/ocicl/ocicl.git /tmp/ocicl
+          cd /tmp/ocicl
+          sbcl --load setup.lisp
+
+          # GITHUB_PATH にWindows形式パスを書き込む
+          echo "C:\Users\runneradmin\AppData\Local\Temp\ocicl" >> "$GITHUB_PATH"
+
+      # ========================================
+      # 3. 依存関係のインストールとビルド
+      # ========================================
+      - name: Install Dependencies and Build Executable
+        shell: bash
+        run: |
+          ocicl install
+
+          # ocicl-runtime をロードする設定を書き込む
+          cat > ~/.sbclrc << 'EOF'
+          #-ocicl
+          (when (probe-file (merge-pathnames ".local/share/ocicl/ocicl-runtime.lisp"
+                                            (user-homedir-pathname)))
+            (load (merge-pathnames ".local/share/ocicl/ocicl-runtime.lisp"
+                                   (user-homedir-pathname))))
+          (when (probe-file (merge-pathnames "AppData/Local/ocicl/ocicl-runtime.lisp"
+                                            (user-homedir-pathname)))
+            (load (merge-pathnames "AppData/Local/ocicl/ocicl-runtime.lisp"
+                                   (user-homedir-pathname))))
+
+          (asdf:initialize-source-registry
+            (list :source-registry (list :directory (uiop:getcwd)) :inherit-configuration))
+          EOF
+
+          sbcl --non-interactive \
+               --eval '(asdf:make :cl-for-dev)'
+
+
+      # ========================================
+      # 4. アーティファクトの回収
+      # ========================================
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cl-for-dev-${{ matrix.os }}
+          path: |
+            cl-for-dev
+            cl-for-dev.exe
