@@ -53,8 +53,8 @@ jobs:
       - name: Install ocicl (macOS)
         if: runner.os == 'macOS'
         run: |
+          brew info ocicl
           brew install ocicl
-          brew upgrade ocicl
           ocicl setup
 
       - name: Install ocicl (Windows)
