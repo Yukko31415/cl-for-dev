@@ -29,7 +29,9 @@ jobs:
 
       - name: Install SBCL (macOS)
         if: runner.os == 'macOS'
-        run: brew install sbcl
+        run: |
+          brew update
+          brew install sbcl
 
       - name: Install SBCL (Windows)
         if: runner.os == 'Windows'
@@ -53,7 +55,7 @@ jobs:
       - name: Install ocicl (macOS)
         if: runner.os == 'macOS'
         run: |
-          brew info ocicl
+          brew update
           brew install ocicl
           ocicl setup
 
