@@ -55,7 +55,6 @@ jobs:
       - name: Install ocicl (macOS)
         if: runner.os == 'macOS'
         run: |
-          brew update
           brew install ocicl
           ocicl setup
 
