@@ -73,9 +73,6 @@ jobs:
       - name: Install Dependencies and Build Executable
         shell: bash
         run: |
-          ocicl install
-          ocicl update
-
           # ocicl-runtime をロードする設定を書き込む
           cat > ~/.sbclrc << 'EOF'
           #-ocicl
@@ -91,6 +88,9 @@ jobs:
           (asdf:initialize-source-registry
             (list :source-registry (list :directory (uiop:getcwd)) :inherit-configuration))
           EOF
+
+          ocicl update
+          ocicl install
 
           sbcl --non-interactive \
                --eval '(asdf:make :cl-for-dev)'
