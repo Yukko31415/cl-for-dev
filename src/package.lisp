@@ -9,6 +9,6 @@
   (:use #:cl-sls)
   (:local-nicknames (#:cli #:clingon))
   (:documentation "The cl-for-dev package.")
-  (:export #:main))
+  (:export #:main #:shutdown))
 
 
